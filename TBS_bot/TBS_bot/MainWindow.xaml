@@ -12,6 +12,7 @@
         <ListView x:Name="addressesTB" HorizontalAlignment="Left" Height="268" Margin="10,49,0,0" VerticalAlignment="Top" Width="257" SelectionChanged="AddressesTB_SelectionChanged"/>
         <TextBlock x:Name="hyperLinkTB" HorizontalAlignment="Left" Height="33" Margin="10,331,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="615"/>
         <Button Content="Excel" HorizontalAlignment="Left" Margin="710,49,0,0" VerticalAlignment="Top" Width="74" Click="Button_Click"/>
+        <Button Content="json" HorizontalAlignment="Left" Margin="710,88,0,0" VerticalAlignment="Top" Width="75" Click="FlatObjectsSerialize"/>
 
     </Grid>
 </Window>
