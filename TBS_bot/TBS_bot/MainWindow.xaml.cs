@@ -15,6 +15,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Text.Json;
+using Excel = Microsoft.Office.Interop.Excel;
+using word = Microsoft.Office.Interop.Word;
 
 namespace TBS_bot
 {
@@ -25,8 +28,7 @@ namespace TBS_bot
         List<string> links = new List<string>();
         List<string> addresses = new List<string>();
         List<string> FlatDescription = new List<string>();
-        List<string> flatDescriptionReplacementList = new List<string>
-        {
+        List<string> flatDescriptionReplacementList = new List<string>{
             "<li>",
             "</li>",
             "<sup>",
@@ -42,7 +44,8 @@ namespace TBS_bot
               "</p>",
         };
 
-
+        List<FlatDescription> flatObjects = new List<FlatDescription>();
+        
         public MainWindow()
         {
             InitializeComponent();
@@ -108,6 +111,11 @@ namespace TBS_bot
             flatNumber = flatNumber.Substring(14);
             stringBuilder.Append("ogłoszenie nr: " + flatNumber + Environment.NewLine);
 
+            string address = Result.Substring(Result.IndexOf("przy ul.") + 8);
+            address = address.Replace("&nbsp;", " ");
+            address = address.Substring(0, address.IndexOf("we Wrocławiu"));
+            stringBuilder.Append(address + Environment.NewLine);
+
             Result = Result.Substring(Result.IndexOf("(osiedle") + 1);
             stringBuilder.Append(Result.Substring(0, Result.IndexOf(")")) + Environment.NewLine);
 
@@ -130,14 +138,22 @@ namespace TBS_bot
             stringBuilder.Append("czynsz: " + (flatArea * 14.25).ToString("F") + Environment.NewLine);
 
             int RoomsCount = Regex.Matches(stringBuilder.ToString(), "Pokoju").Count;
-            int isAneks = Regex.Matches(stringBuilder.ToString(), "Pokoju z aneksem kuchennym").Count;
+            int isAneksInt = Regex.Matches(stringBuilder.ToString(), "Pokoju z aneksem kuchennym").Count;
 
             stringBuilder.Append("ilośc pokoi: " + RoomsCount + Environment.NewLine);
+            bool isAneks;
 
-            if (isAneks == 1)
+            if (isAneksInt == 1) {
                 stringBuilder.Append("z aneksem: true" + Environment.NewLine);
-            else
+                isAneks = true;
+            }
+            else {
                 stringBuilder.Append("z aneksem: false" + Environment.NewLine);
+                isAneks = false;
+            }
+
+            FlatDescription fd = new FlatDescription(flatNumber,address,RoomsCount,flatArea,isAneks,false);
+            flatObjects.Add(fd);
 
             return stringBuilder.ToString();
         }
@@ -157,5 +173,68 @@ namespace TBS_bot
             Process.Start(hyperLinkTB.Text);
         }
 
+        private void FlatObjectsSerialize()
+        {
+            string test = JsonSerializer.Serialize(flatObjects);
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            Excel.Application xlApp;
+            Excel.Workbook xlWorkBook;
+            Excel.Worksheet xlWorkSheet;
+
+            xlApp = new Excel.Application();
+            xlApp.DisplayAlerts = false;
+
+            string path = AppDomain.CurrentDomain.BaseDirectory;
+            string xlmPath =  path + "dane.xlsx";
+            string docxPath = path + "wniosek.docx";
+            string pdfPath = path + "wniosek.pdf";
+            xlWorkBook = xlApp.Workbooks.Open(xlmPath, 0, true, 5, "", "", true, Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
+            xlWorkSheet = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(1);
+
+            //xlWorkSheet.Cells[1, 1] = "test";
+
+            xlWorkSheet.Cells[1, 1] = flatObjects.ElementAt(addressesTB.SelectedIndex).number;
+            xlWorkSheet.Cells[2, 1] = flatObjects.ElementAt(addressesTB.SelectedIndex).Addres;
+            xlWorkSheet.Cells[3, 1] = flatObjects.ElementAt(addressesTB.SelectedIndex).flatNymbers;
+            xlWorkSheet.Cells[4, 1] = flatObjects.ElementAt(addressesTB.SelectedIndex).flatArea;
+
+            xlWorkBook.Saved = true;
+            xlWorkBook.SaveCopyAs(xlmPath);
+
+            xlWorkBook.Close(null,null,null);
+            xlApp.Quit();
+
+            word.Application app = new word.Application();
+            app.DisplayAlerts = Microsoft.Office.Interop.Word.WdAlertLevel.wdAlertsNone;
+            word.Document doc = app.Documents.Open(docxPath);
+     
+            doc.SaveAs2(pdfPath, word.WdSaveFormat.wdFormatPDF);
+            doc.Close();
+            app.Quit();
+
+            //releaseObject(xlWorkSheet);
+           // releaseObject(xlWorkBook);
+           // releaseObject(xlApp);
+        }
+        private void releaseObject(object obj)
+        {
+            try
+            {
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(obj);
+                obj = null;
+            }
+            catch (Exception ex)
+            {
+                obj = null;
+                MessageBox.Show("Unable to release the Object " + ex.ToString());
+            }
+            finally
+            {
+                GC.Collect();
+            }
+        }
     }
 }
