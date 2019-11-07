@@ -34,6 +34,12 @@ namespace TBS_bot
             " &nbsp;",
             "&nbsp;",
             "\t",
+             "<strong>",
+              "</strong>",
+              "<u>",
+              "</u>",
+              "<p>",
+              "</p>",
         };
 
 
@@ -91,27 +97,47 @@ namespace TBS_bot
         private string getFlatDescription(string Result)
         {
             StringBuilder stringBuilder = new StringBuilder();
-            Result = Result.Substring(Result.IndexOf("(osiedle")+1);
 
+            Result = Result.Substring(Result.IndexOf("OGŁOSZENIE"));
+            string flatNumber = Result.Substring(0, Result.IndexOf("</p>"));
+
+            foreach (var item in flatDescriptionReplacementList)
+            {
+                flatNumber = flatNumber.Replace(item, "");
+            }
+            flatNumber = flatNumber.Substring(14);
+            stringBuilder.Append("ogłoszenie nr: " + flatNumber + Environment.NewLine);
+
+            Result = Result.Substring(Result.IndexOf("(osiedle") + 1);
             stringBuilder.Append(Result.Substring(0, Result.IndexOf(")")) + Environment.NewLine);
+
             Result = Result.Substring(Result.IndexOf("o powierzchni") + 14);
 
             double flatArea = Convert.ToDouble(Regex.Replace(Result.Substring(0, Result.IndexOf("składający się") - 2), "[^0-9,]", ""));
 
             stringBuilder.Append("pow: " + flatArea + Environment.NewLine);
 
-            Result = Result.Substring(Result.IndexOf("<ol>")+4);
+            Result = Result.Substring(Result.IndexOf("<ol>") + 4);
             Result = Result.Substring(0, Result.IndexOf("</ol>"));
 
             foreach (var item in flatDescriptionReplacementList)
             {
                 Result = Result.Replace(item, "");
             }
- 
+
             stringBuilder.Append(Result + Environment.NewLine);
-            stringBuilder.Append("part: " + (flatArea*1200).ToString("F") + Environment.NewLine);
+            stringBuilder.Append("part: " + (flatArea * 1200).ToString("F") + Environment.NewLine);
             stringBuilder.Append("czynsz: " + (flatArea * 14.25).ToString("F") + Environment.NewLine);
 
+            int RoomsCount = Regex.Matches(stringBuilder.ToString(), "Pokoju").Count;
+            int isAneks = Regex.Matches(stringBuilder.ToString(), "Pokoju z aneksem kuchennym").Count;
+
+            stringBuilder.Append("ilośc pokoi: " + RoomsCount + Environment.NewLine);
+
+            if (isAneks == 1)
+                stringBuilder.Append("z aneksem: true" + Environment.NewLine);
+            else
+                stringBuilder.Append("z aneksem: false" + Environment.NewLine);
 
             return stringBuilder.ToString();
         }
