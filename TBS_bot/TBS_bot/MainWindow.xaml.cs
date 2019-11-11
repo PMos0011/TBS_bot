@@ -19,6 +19,8 @@ using Excel = Microsoft.Office.Interop.Excel;
 using word = Microsoft.Office.Interop.Word;
 using System.IO;
 using Newtonsoft.Json;
+using System.Net.Mail;
+using System.Net;
 
 namespace TBS_bot
 {
@@ -48,6 +50,7 @@ namespace TBS_bot
         public MainWindow()
         {
             InitializeComponent();
+            GetEmailSettings();
             ReadJson();
             if(CurrentFlatObjects!=null)
                 WriteAdressesList();
@@ -308,7 +311,55 @@ namespace TBS_bot
 
         private void EmailSender_Click(object sender, RoutedEventArgs e)
         {
+            try
+            {
+                MailMessage mail = new MailMessage();
+                SmtpClient smtp = new SmtpClient(serverSmtpTB.Text);
 
+                mail.From = new MailAddress(EmailTB.Text);
+                mail.To.Add(RecievEmailTB.Text);
+                mail.Subject = "TBS";
+                mail.Body = "W załaczniku przesyłam wniosek";
+
+
+                string path = AppDomain.CurrentDomain.BaseDirectory;
+                string pdfPath = path + "wniosek.pdf";
+
+
+                Attachment attachment = new Attachment(pdfPath);
+                mail.Attachments.Add(attachment);
+
+                smtp.Port = Convert.ToInt32(SmtpPortTB.Text);
+                smtp.Credentials = new NetworkCredential(EmailTB.Text, passwordTB.Password);
+                smtp.EnableSsl = true;
+
+                smtp.Send(mail);
+
+            }
+            catch (Exception ex)
+            {
+
+                MessageBox.Show(ex.ToString());
+            }              
+        }
+
+        private void GetEmailSettings()
+        {
+            EmailTB.Text = Properties.Settings.Default.email;
+            passwordTB.Password = Properties.Settings.Default.password;
+            RecievEmailTB.Text = Properties.Settings.Default.recieverEmail;
+            serverSmtpTB.Text = Properties.Settings.Default.smtpServer;
+            SmtpPortTB.Text = Properties.Settings.Default.smtpPort.ToString();
+        }
+
+        private void EmailSettingsSaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            Properties.Settings.Default.email = EmailTB.Text;
+            Properties.Settings.Default.password = passwordTB.Password;
+            Properties.Settings.Default.recieverEmail = RecievEmailTB.Text;
+            Properties.Settings.Default.smtpServer = serverSmtpTB.Text;
+            Properties.Settings.Default.smtpPort = Convert.ToInt32(SmtpPortTB.Text);
+            Properties.Settings.Default.Save();
         }
     }
 }

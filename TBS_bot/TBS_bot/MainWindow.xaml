@@ -5,20 +5,25 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TBS_bot"
         mc:Ignorable="d"
-        Title="TBS_BOT" Height="500" Width="640">
+        Title="TBS_BOT" Height="520" Width="640">
     <Grid>
         <Button Content="GetData" HorizontalAlignment="Left" Margin="551,10,0,0" VerticalAlignment="Top" Width="74" Click="GetFlatsList_Click"/>
         <TextBlock x:Name="linksTB" HorizontalAlignment="Left" Height="269" Margin="300,49,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="325"/>
         <ListView x:Name="addressesTB" HorizontalAlignment="Left" Height="268" Margin="10,49,0,0" VerticalAlignment="Top" Width="257" SelectionChanged="AddressesTB_SelectionChanged"/>
         <TextBlock x:Name="hyperLinkTB" HorizontalAlignment="Left" Height="33" Margin="10,331,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="615"/>
         <Label Content="adres                              wysłane" HorizontalAlignment="Left" Height="26" Margin="9,18,0,0" VerticalAlignment="Top" Width="258"/>
-        <TextBox x:Name="EmailTB" HorizontalAlignment="Left" Height="28" Margin="92,364,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="318"/>
+        <TextBox x:Name="EmailTB" HorizontalAlignment="Left" Height="28" Margin="92,364,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="236"/>
         <Label Content="nadawca" HorizontalAlignment="Left" Height="28" Margin="10,364,0,0" VerticalAlignment="Top" Width="82"/>
         <Label Content="hasło" HorizontalAlignment="Left" Height="28" Margin="10,397,0,0" VerticalAlignment="Top" Width="82"/>
-        <TextBox x:Name="EmailTB_Copy" HorizontalAlignment="Left" Height="28" Margin="92,430,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="318"/>
+        <TextBox x:Name="RecievEmailTB" HorizontalAlignment="Left" Height="28" Margin="92,430,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="236"/>
         <Label Content="odbiorca" HorizontalAlignment="Left" Height="28" Margin="10,430,0,0" VerticalAlignment="Top" Width="82"/>
-        <PasswordBox HorizontalAlignment="Left" Margin="92,397,0,0" VerticalAlignment="Top" Height="28" Width="318"/>
+        <PasswordBox x:Name="passwordTB" HorizontalAlignment="Left" Margin="92,397,0,0" VerticalAlignment="Top" Height="28" Width="236"/>
         <Button x:Name="EmailSender" Content="email" HorizontalAlignment="Left" Margin="471,10,0,0" VerticalAlignment="Top" Width="75" Click="EmailSender_Click"/>
+        <TextBox x:Name="serverSmtpTB" HorizontalAlignment="Left" Height="28" Margin="415,364,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="209"/>
+        <Label Content="server Smtp" HorizontalAlignment="Left" Height="28" Margin="333,364,0,0" VerticalAlignment="Top" Width="82"/>
+        <TextBox x:Name="SmtpPortTB" HorizontalAlignment="Left" Height="28" Margin="415,397,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="209"/>
+        <Label Content="Smtp port" HorizontalAlignment="Left" Height="28" Margin="333,397,0,0" VerticalAlignment="Top" Width="82"/>
+        <Button x:Name="EmailSettingsSaveButton" Content="Zapisz ustawienia" HorizontalAlignment="Left" Margin="524,443,0,0" VerticalAlignment="Top" Width="100" Click="EmailSettingsSaveButton_Click"/>
 
     </Grid>
 </Window>
