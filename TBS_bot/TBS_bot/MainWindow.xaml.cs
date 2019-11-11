@@ -411,9 +411,7 @@ namespace TBS_bot
                 mail.Dispose();
 
                 if (flat == null)
-                    MessageBox.Show("Wysłano wiadomość");
-
-                return true;
+                    MessageBox.Show("Wysłano wiadomość");              
 
             }
             catch (Exception ex)
@@ -421,7 +419,7 @@ namespace TBS_bot
                 if (flat == null)
                     MessageBox.Show(ex.ToString());
                 else
-                    Dispatcher.Invoke(() => { NotificationTB.Text = "błąd email"; });
+                            MessageBox.Show(ex.ToString());
 
                 return false;
             }
@@ -429,7 +427,9 @@ namespace TBS_bot
             {
                 if (File.Exists(pdfFromDocPath))
                     File.Delete(pdfFromDocPath);
+                
             }
+            return true;
         }
 
 
@@ -522,6 +522,7 @@ namespace TBS_bot
             else
             {
                await CreateAndSend(currentFlatObjects.ElementAt(AddressesTB.SelectedIndex));
+                FlatObjectsSerialize();
                 WriteAdressesList();
             }
 
