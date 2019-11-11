@@ -26,9 +26,6 @@ namespace TBS_bot
     public partial class MainWindow : Window
     {
 
-        List<string> links = new List<string>();
-        List<string> addresses = new List<string>();
-        List<string> FlatDescription = new List<string>();
         List<string> flatDescriptionReplacementList = new List<string>{
             "<li>",
             "</li>",
@@ -52,6 +49,8 @@ namespace TBS_bot
         {
             InitializeComponent();
             ReadJson();
+            if(CurrentFlatObjects!=null)
+                WriteAdressesList();
         }
 
         private void ReadJson()
@@ -59,15 +58,14 @@ namespace TBS_bot
             string docPath =
               AppDomain.CurrentDomain.BaseDirectory;
             docPath += "json.txt";
+
             try
-            {   
+            {
                 using (StreamReader sr = new StreamReader(docPath))
                 {
                     string line = sr.ReadToEnd();
                     CurrentFlatObjects = JsonConvert.DeserializeObject<List<FlatDescription>>(line);
                 }
-
-            
             }
             catch (IOException e)
             {
@@ -78,16 +76,28 @@ namespace TBS_bot
         private async void GetFlatsList_Click(object sender, RoutedEventArgs e)
         {
             mainWindow.Cursor = Cursors.Wait;
-            addressesTB.Items.Clear();
+            
+            ReadJson();
+ 
+            await GetFlatsList();
 
-            string Result = await GetPageString("http://www.tbs-wroclaw.com.pl/mieszkania-na-wynajem/");
-            GetFlatsList(Result);
-
-            foreach (var item in links)
+            if (isFlatObjectsDifferent())
             {
-                Result = await GetPageString(item);
-                FlatDescription.Add(getFlatDescription(Result));
+                foreach (var item in flatObjects)
+                {
+                    await GetFlatDescription(item);
+                }
+                UpdateFlatObjects();
+
+                SendEmail();
+
+                FlatObjectsSerialize();
+                ReadJson();
+
+                addressesTB.Items.Clear();
+                WriteAdressesList();
             }
+
             mainWindow.Cursor = Cursors.Arrow;
 
         }
@@ -99,33 +109,46 @@ namespace TBS_bot
             return Result;
         }
 
-        private void GetFlatsList(string Result)
+        private async Task GetFlatsList()
         {
+            flatObjects.Clear();
+            string Result = await GetPageString("http://www.tbs-wroclaw.com.pl/mieszkania-na-wynajem/");
             Result = Result.Substring(Result.IndexOf("<a href=\"http://www.tbs-wroclaw.com.pl/"));
             Result = Result.Substring(0, Result.IndexOf("<p>&nbsp;</p>"));
+
             string[] Paragraphs = Result.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var item in Paragraphs)
             {
                 string line = item.Replace("<strong>", "");
                 line = line.Replace("</strong>", "");
                 string TemporaryItem = line.Substring(line.IndexOf('"') + 1);
-                TemporaryItem = TemporaryItem.Substring(0, TemporaryItem.IndexOf('"'));
-                links.Add(TemporaryItem);
+                string link = TemporaryItem.Substring(0, TemporaryItem.IndexOf('"'));
+
                 TemporaryItem = line.Substring(line.IndexOf("\">") + 2);
-                TemporaryItem = TemporaryItem.Substring(0, TemporaryItem.IndexOf("</"));
-                addresses.Add(TemporaryItem);
+                string address = TemporaryItem.Substring(0, TemporaryItem.IndexOf("</"));
+
+                flatObjects.Add(new FlatDescription(address, link));
             }
 
-            foreach (var item in addresses)
+        }
+
+        private void WriteAdressesList()
+        {
+            addressesTB.SelectedItems.Clear();
+            addressesTB.Items.Clear();
+            linksTB.Text = "";
+            hyperLinkTB.Text = "";
+
+            foreach (var item in CurrentFlatObjects)
             {
-                addressesTB.Items.Add(item);
+                addressesTB.Items.Add(item.Address + "\t" + item.isSend);
             }
         }
 
-        private string getFlatDescription(string Result)
+        private async Task GetFlatDescription(FlatDescription flatDescrition)
         {
-            StringBuilder stringBuilder = new StringBuilder();
 
+            string Result = await GetPageString(flatDescrition.Link);
             Result = Result.Substring(Result.IndexOf("OGŁOSZENIE"));
             string flatNumber = Result.Substring(0, Result.IndexOf("</p>"));
 
@@ -133,22 +156,18 @@ namespace TBS_bot
             {
                 flatNumber = flatNumber.Replace(item, "");
             }
+
             flatNumber = flatNumber.Substring(14);
-            stringBuilder.Append("ogłoszenie nr: " + flatNumber + Environment.NewLine);
 
             string address = Result.Substring(Result.IndexOf("przy ul.") + 8);
             address = address.Replace("&nbsp;", " ");
             address = address.Substring(0, address.IndexOf("we Wrocławiu"));
-            stringBuilder.Append(address + Environment.NewLine);
 
             Result = Result.Substring(Result.IndexOf("(osiedle") + 1);
-            stringBuilder.Append(Result.Substring(0, Result.IndexOf(")")) + Environment.NewLine);
+            string district = Result.Substring(0, Result.IndexOf(")")) + Environment.NewLine;
 
             Result = Result.Substring(Result.IndexOf("o powierzchni") + 14);
-
             double flatArea = Convert.ToDouble(Regex.Replace(Result.Substring(0, Result.IndexOf("składający się") - 2), "[^0-9,]", ""));
-
-            stringBuilder.Append("pow: " + flatArea + Environment.NewLine);
 
             Result = Result.Substring(Result.IndexOf("<ol>") + 4);
             Result = Result.Substring(0, Result.IndexOf("</ol>"));
@@ -158,58 +177,49 @@ namespace TBS_bot
                 Result = Result.Replace(item, "");
             }
 
-            stringBuilder.Append(Result + Environment.NewLine);
-            stringBuilder.Append("part: " + (flatArea * 1200).ToString("F") + Environment.NewLine);
-            stringBuilder.Append("czynsz: " + (flatArea * 14.25).ToString("F") + Environment.NewLine);
+            int RoomsCount = Regex.Matches(Result, "Pokoju").Count;
+            int isAneksInt = Regex.Matches(Result.ToString(), "Pokoju z aneksem kuchennym").Count;
 
-            int RoomsCount = Regex.Matches(stringBuilder.ToString(), "Pokoju").Count;
-            int isAneksInt = Regex.Matches(stringBuilder.ToString(), "Pokoju z aneksem kuchennym").Count;
-
-            stringBuilder.Append("ilość pokoi: " + RoomsCount + Environment.NewLine);
             bool isAneks;
 
             if (isAneksInt == 1)
-            {
-                stringBuilder.Append("z aneksem: true" + Environment.NewLine);
                 isAneks = true;
-            }
+
             else
-            {
-                stringBuilder.Append("z aneksem: false" + Environment.NewLine);
                 isAneks = false;
-            }
 
-            FlatDescription fd = new FlatDescription(flatNumber, address, RoomsCount, flatArea, isAneks, false);
-            flatObjects.Add(fd);
-
-            return stringBuilder.ToString();
+            flatDescrition.FlatDescriptionUpdate(flatNumber, address, RoomsCount, flatArea, isAneks, false, district + Result);
         }
 
         private void AddressesTB_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            linksTB.Text = FlatDescription.ElementAt(addressesTB.SelectedIndex);
-            Hyperlink hyperlink = new Hyperlink();
-            hyperlink.Inlines.Add(links.ElementAt(addressesTB.SelectedIndex));
-            hyperlink.Click += new RoutedEventHandler(HyperLinkClick);
-            hyperLinkTB.Text = "";
-            hyperLinkTB.Inlines.Add(hyperlink);
+            if (addressesTB.SelectedIndex > -1)
+            {
+                linksTB.Text = CurrentFlatObjects.ElementAt(addressesTB.SelectedIndex).GetDetailedDescription();
+                Hyperlink hyperlink = new Hyperlink();
+                hyperlink.Inlines.Add(CurrentFlatObjects.ElementAt(addressesTB.SelectedIndex).Link);
+                hyperlink.Click += new RoutedEventHandler(HyperLinkClick);
+                hyperLinkTB.Text = "";
+                hyperLinkTB.Inlines.Add(hyperlink);
+            }
         }
+        
 
         private void HyperLinkClick(object sender, RoutedEventArgs e)
         {
             Process.Start(hyperLinkTB.Text);
         }
 
-        private void FlatObjectsSerialize(object sender, RoutedEventArgs e)
+        private void FlatObjectsSerialize()
         {
-            string test = JsonConvert.SerializeObject(flatObjects);
+            string FlatObjectString = JsonConvert.SerializeObject(flatObjects);
 
             string docPath =
               AppDomain.CurrentDomain.BaseDirectory;
 
             using (StreamWriter outputFile = new StreamWriter(System.IO.Path.Combine(docPath, "json.txt")))
             {
-                    outputFile.WriteLine(test);
+                outputFile.WriteLine(FlatObjectString);
             }
 
         }
@@ -232,8 +242,8 @@ namespace TBS_bot
             xlWorkSheet = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(1);
 
             xlWorkSheet.Cells[1, 1] = flatObjects.ElementAt(addressesTB.SelectedIndex).number;
-            xlWorkSheet.Cells[2, 1] = flatObjects.ElementAt(addressesTB.SelectedIndex).Addres;
-            xlWorkSheet.Cells[3, 1] = flatObjects.ElementAt(addressesTB.SelectedIndex).flatNymbers;
+            xlWorkSheet.Cells[2, 1] = flatObjects.ElementAt(addressesTB.SelectedIndex).AlternationAddress;
+            xlWorkSheet.Cells[3, 1] = flatObjects.ElementAt(addressesTB.SelectedIndex).RoomsCount;
             xlWorkSheet.Cells[4, 1] = flatObjects.ElementAt(addressesTB.SelectedIndex).flatArea;
 
             xlWorkBook.Saved = true;
@@ -254,6 +264,50 @@ namespace TBS_bot
             doc.SaveAs2(pdfPath, word.WdSaveFormat.wdFormatPDF);
             doc.Close();
             app.Quit();
+
+        }
+
+        private bool isFlatObjectsDifferent()
+        {
+            if (CurrentFlatObjects == null)
+                return true;
+            else if (flatObjects.Count() != CurrentFlatObjects.Count())
+                return true;
+            else
+            {
+                for (int i = 0; i < flatObjects.Count(); i++)
+                {
+                    if (!flatObjects.ElementAt(i).Link.Equals(CurrentFlatObjects.ElementAt(i).Link))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        private void UpdateFlatObjects()
+        {
+            if (CurrentFlatObjects != null)
+                foreach (var item in flatObjects)
+                    foreach (var item2 in CurrentFlatObjects)
+                        if (item.Link.Equals(item2.Link))
+                        {
+                            item.isSend = item2.isSend;
+                            break;
+                        }
+        }
+
+        private void SendEmail()
+        {
+            foreach (var item in flatObjects)
+            {
+                if (!item.isSend)
+                    if (item.RoomsCount > 1)
+                        item.isSend = true;
+            }
+        }
+
+        private void EmailSender_Click(object sender, RoutedEventArgs e)
+        {
 
         }
     }
