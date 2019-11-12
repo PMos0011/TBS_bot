@@ -3,18 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using Excel = Microsoft.Office.Interop.Excel;
 using word = Microsoft.Office.Interop.Word;
 using System.IO;
@@ -29,6 +23,8 @@ namespace TBS_bot
     public partial class MainWindow : Window
     {
         bool isBotWorking;
+        bool isConnection;
+        bool isEmailSenderError;
 
         List<string> flatDescriptionReplacementList = new List<string>{
             "<li>",
@@ -56,6 +52,9 @@ namespace TBS_bot
         {
             InitializeComponent();
             isBotWorking = false;
+            isConnection = false;
+            isEmailSenderError = false;
+
             NotificationTB.Text = "nie działam";
             path = AppDomain.CurrentDomain.BaseDirectory;
             pdfFromDocPath = path + "wniosek.pdf";
@@ -96,6 +95,7 @@ namespace TBS_bot
                     StartBotButton.Content = "Stop Bot";
                     NotificationTB.Text = "działam";
                     MailSettingsGrid.IsEnabled = false;
+                    isEmailSenderError = false;
                 }
                 else
                 {
@@ -115,69 +115,94 @@ namespace TBS_bot
 
         private async Task BotTasks()
         {
-            string notiffication = NotificationTB.Text;
-            Dispatcher.Invoke(() => { NotificationTB.Text = "Pobieram"; });
             mainWindow.Cursor = Cursors.Wait;
 
-
+            Dispatcher.Invoke(() => { NotificationTB.Text = "Pobieram"; });
             await GetFlatsList();
 
-            if (IsFlatObjectsDifferent())
+            if (isConnection)
             {
-                foreach (var item in flatObjects)
+                if (IsFlatObjectsDifferent())
                 {
-                    await GetFlatDescription(item);
+                    foreach (var item in flatObjects)
+                    {
+                        await GetFlatDescription(item);
+                    }
+                    if (isConnection)
+                    {
+                        UpdateFlatObjects();
+
+                        await SendEmailCheck();
+
+                        FlatObjectsSerialize();
+                        ReadJson();
+
+                        AddressesTB.Items.Clear();
+                        WriteAdressesList();
+                    }
+                    else
+                        Dispatcher.Invoke(() => { NotificationTB.Text = "błąd połączenia"; });
                 }
-                UpdateFlatObjects();
 
-                await SendEmailCheck();
-
-                FlatObjectsSerialize();
-                ReadJson();
-
-                AddressesTB.Items.Clear();
-                WriteAdressesList();
+                Dispatcher.Invoke(() => { NotificationTB.Text = "działam"; });
             }
+            else
+                Dispatcher.Invoke(() => { NotificationTB.Text = "błąd połączenia"; });
 
-            Dispatcher.Invoke(() => { NotificationTB.Text = notiffication; });
             mainWindow.Cursor = Cursors.Arrow;
         }
 
         private async Task<string> GetPageString(string url)
         {
-            HttpClient httpClient = new HttpClient();
-            string Result = await httpClient.GetStringAsync(url);
-            return Result;
+            try
+            {
+                HttpClient httpClient = new HttpClient();
+                string result = await httpClient.GetStringAsync(url);
+                isConnection = true;
+                return result;
+            }
+            catch (Exception)
+            {
+                isConnection = false;
+
+            }
+            return null;
         }
 
         private async Task GetFlatsList()
         {
             flatObjects.Clear();
             string result = await GetPageString("http://www.tbs-wroclaw.com.pl/mieszkania-na-wynajem/");
-            result = result.Substring(result.IndexOf("<a href=\"http://www.tbs-wroclaw.com.pl/"));
-            result = result.Substring(0, result.IndexOf("<p>&nbsp;</p>"));
 
-            string[] paragraphs = result.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (var item in paragraphs)
+            if (isConnection)
             {
-                string line = item.Replace("<strong>", "");
-                line = line.Replace("</strong>", "");
-                string temporaryItem = line.Substring(line.IndexOf('"') + 1);
-                string link = temporaryItem.Substring(0, temporaryItem.IndexOf('"'));
+                result = result.Substring(result.IndexOf("<a href=\"http://www.tbs-wroclaw.com.pl/"));
+                result = result.Substring(0, result.IndexOf("<p>&nbsp;</p>"));
 
-                temporaryItem = line.Substring(line.IndexOf("\">") + 2);
-                string address = temporaryItem.Substring(0, temporaryItem.IndexOf("</"));
+                string[] paragraphs = result.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var item in paragraphs)
+                {
+                    string line = item.Replace("<strong>", "");
+                    line = line.Replace("</strong>", "");
+                    string temporaryItem = line.Substring(line.IndexOf('"') + 1);
+                    string link = temporaryItem.Substring(0, temporaryItem.IndexOf('"'));
 
-                flatObjects.Add(new FlatDescription(address, link));
+                    temporaryItem = line.Substring(line.IndexOf("\">") + 2);
+                    string address = temporaryItem.Substring(0, temporaryItem.IndexOf("</"));
+
+                    flatObjects.Add(new FlatDescription(address, link));
+                }
             }
-
         }
 
         private void WriteAdressesList()
         {
             AddressesTB.SelectedItems.Clear();
             AddressesTB.Items.Clear();
-            FlatDescriptionTB.Text = "";
+
+            if (!isEmailSenderError)
+                FlatDescriptionTB.Text = "";
+
             HyperLinkTB.Text = "";
 
             foreach (var item in currentFlatObjects)
@@ -190,47 +215,51 @@ namespace TBS_bot
         {
 
             string result = await GetPageString(flat.Link);
-            result = result.Substring(result.IndexOf("OGŁOSZENIE"));
-            string flatNumber = result.Substring(0, result.IndexOf("</p>"));
 
-            foreach (var item in flatDescriptionReplacementList)
+            if (isConnection)
             {
-                flatNumber = flatNumber.Replace(item, "");
+                result = result.Substring(result.IndexOf("OGŁOSZENIE"));
+                string flatNumber = result.Substring(0, result.IndexOf("</p>"));
+
+                foreach (var item in flatDescriptionReplacementList)
+                {
+                    flatNumber = flatNumber.Replace(item, "");
+                }
+
+                flatNumber = flatNumber.Substring(14);
+
+                string address = result.Substring(result.IndexOf("przy ul.") + 8);
+                address = address.Replace("&nbsp;", " ");
+                address = address.Substring(0, address.IndexOf("we Wrocławiu"));
+
+                result = result.Substring(result.IndexOf("(osiedle") + 9);
+                string district = result.Substring(0, result.IndexOf(")"));
+
+                result = result.Substring(result.IndexOf("o powierzchni") + 14);
+                double flatArea = Convert.ToDouble(Regex.Replace(result.Substring(0, result.IndexOf("składający się") - 2), "[^0-9,]", ""));
+
+                result = result.Substring(result.IndexOf("<ol>") + 4);
+                result = result.Substring(0, result.IndexOf("</ol>"));
+
+                foreach (var item in flatDescriptionReplacementList)
+                {
+                    result = result.Replace(item, "");
+                }
+
+                int roomsCount = Regex.Matches(result, "Pokoju").Count;
+                int isAneksInt = Regex.Matches(result.ToString(), "Pokoju z aneksem kuchennym").Count;
+
+                bool isAneks;
+
+                if (isAneksInt == 1)
+                    isAneks = true;
+
+                else
+                    isAneks = false;
+
+                flat.FlatDescriptionUpdate(flatNumber, address, roomsCount, flatArea, isAneks, district, result);
+                SetFlatClassified(flat);
             }
-
-            flatNumber = flatNumber.Substring(14);
-
-            string address = result.Substring(result.IndexOf("przy ul.") + 8);
-            address = address.Replace("&nbsp;", " ");
-            address = address.Substring(0, address.IndexOf("we Wrocławiu"));
-
-            result = result.Substring(result.IndexOf("(osiedle") + 9);
-            string district = result.Substring(0, result.IndexOf(")"));
-
-            result = result.Substring(result.IndexOf("o powierzchni") + 14);
-            double flatArea = Convert.ToDouble(Regex.Replace(result.Substring(0, result.IndexOf("składający się") - 2), "[^0-9,]", ""));
-
-            result = result.Substring(result.IndexOf("<ol>") + 4);
-            result = result.Substring(0, result.IndexOf("</ol>"));
-
-            foreach (var item in flatDescriptionReplacementList)
-            {
-                result = result.Replace(item, "");
-            }
-
-            int roomsCount = Regex.Matches(result, "Pokoju").Count;
-            int isAneksInt = Regex.Matches(result.ToString(), "Pokoju z aneksem kuchennym").Count;
-
-            bool isAneks;
-
-            if (isAneksInt == 1)
-                isAneks = true;
-
-            else
-                isAneks = false;
-
-            flat.FlatDescriptionUpdate(flatNumber, address, roomsCount, flatArea, isAneks, district, result);
-            SetFlatClassified(flat);
         }
 
         private void AddressesTB_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -361,6 +390,7 @@ namespace TBS_bot
             while (File.Exists(pdfFromDocPath))
                 Thread.Sleep(500);
             CreateProposal(item);
+
             while (!File.Exists(pdfFromDocPath))
                 Thread.Sleep(500);
             while (IsFileLocked(pdfFromDocPath))
@@ -387,10 +417,12 @@ namespace TBS_bot
                 body += subject;
                 pdfPath = pdfFromDocPath;
             }
+            MailMessage mail = new MailMessage();
+            Attachment attachment = new Attachment(pdfPath);
 
             try
             {
-                MailMessage mail = new MailMessage();
+
                 SmtpClient smtp = new SmtpClient(ServerSmtpTB.Text);
 
                 mail.From = new MailAddress(EmailTB.Text);
@@ -398,7 +430,7 @@ namespace TBS_bot
                 mail.Subject = subject;
                 mail.Body = body;
 
-                Attachment attachment = new Attachment(pdfPath);
+
                 mail.Attachments.Add(attachment);
 
                 smtp.Port = Convert.ToInt32(SmtpPortTB.Text);
@@ -407,31 +439,30 @@ namespace TBS_bot
 
                 await smtp.SendMailAsync(mail);
 
-                attachment.Dispose();
-                mail.Dispose();
-
                 if (flat == null)
-                    MessageBox.Show("Wysłano wiadomość");              
+                    MessageBox.Show("Wysłano wiadomość");
+
+                DisposeMailContent(mail, attachment);
 
             }
             catch (Exception ex)
             {
-                if (flat == null)
-                    MessageBox.Show(ex.ToString());
-                else
-                            MessageBox.Show(ex.ToString());
-
+                Dispatcher.Invoke(() => { FlatDescriptionTB.Text = ex.ToString(); });
+                DisposeMailContent(mail, attachment);
+                isEmailSenderError = true;
                 return false;
             }
-            finally
-            {
-                if (File.Exists(pdfFromDocPath))
-                    File.Delete(pdfFromDocPath);
-                
-            }
+
             return true;
         }
 
+        private void DisposeMailContent(MailMessage mail, Attachment attachment)
+        {
+            attachment.Dispose();
+            mail.Dispose();
+            if (File.Exists(pdfFromDocPath))
+                File.Delete(pdfFromDocPath);
+        }
 
         private void GetEmailSettings()
         {
@@ -521,7 +552,7 @@ namespace TBS_bot
             }
             else
             {
-               await CreateAndSend(currentFlatObjects.ElementAt(AddressesTB.SelectedIndex));
+                await CreateAndSend(currentFlatObjects.ElementAt(AddressesTB.SelectedIndex));
                 FlatObjectsSerialize();
                 WriteAdressesList();
             }
