@@ -31,9 +31,10 @@
         <CheckBox x:Name="StablowicaCB" Content="Stabłowice" HorizontalAlignment="Left" Margin="632,49,0,0" VerticalAlignment="Top" Width="94" IsChecked="True"/>
         <CheckBox x:Name="LesnicaCB" Content="Leśnica" HorizontalAlignment="Left" Margin="632,69,0,0" VerticalAlignment="Top" Width="94" IsChecked="True"/>
         <CheckBox x:Name="BrochowCB" Content="Brochów" HorizontalAlignment="Left" Margin="632,89,0,0" VerticalAlignment="Top" Width="94" IsChecked="True"/>
-        <CheckBox x:Name="OtherCB" Content="Inne" HorizontalAlignment="Left" Margin="632,109,0,0" VerticalAlignment="Top" Width="94" IsChecked="True"/>
-        <CheckBox x:Name="KitchenCB" Content="Kuchnia" HorizontalAlignment="Left" Margin="632,151,0,0" VerticalAlignment="Top" Width="94" IsChecked="True"/>
-        <CheckBox x:Name="KitchenetteCB" Content="Aneks" HorizontalAlignment="Left" Margin="632,171,0,0" VerticalAlignment="Top" Width="94" IsChecked="True"/>
+        <CheckBox x:Name="OtherCB" Content="Inne" HorizontalAlignment="Left" Margin="632,129,0,0" VerticalAlignment="Top" Width="94" IsChecked="True"/>
+        <CheckBox x:Name="KitchenCB" Content="Kuchnia" HorizontalAlignment="Left" Margin="632,169,0,0" VerticalAlignment="Top" Width="94" IsChecked="True"/>
+        <CheckBox x:Name="KitchenetteCB" Content="Aneks" HorizontalAlignment="Left" Margin="632,189,0,0" VerticalAlignment="Top" Width="94" IsChecked="True"/>
         <Button x:Name="SendProposalButton" Content="Wyślij wniosek" HorizontalAlignment="Left" Margin="631,361,0,0" VerticalAlignment="Top" Width="109" Click="SendProposalButton_Click"/>
+        <CheckBox x:Name="PsiePoleCB" Content="Psie Pole" HorizontalAlignment="Left" Margin="632,109,0,0" VerticalAlignment="Top" Width="94" IsChecked="True"/>
     </Grid>
 </Window>

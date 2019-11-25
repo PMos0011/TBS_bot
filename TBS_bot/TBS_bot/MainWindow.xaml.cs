@@ -108,7 +108,7 @@ namespace TBS_bot
             while (isBotWorking)
             {
                 await BotTasks();
-                await Task.Delay(61000);
+                await Task.Delay(45000);
             }
 
         }
@@ -232,8 +232,9 @@ namespace TBS_bot
                 address = address.Replace("&nbsp;", " ");
                 address = address.Substring(0, address.IndexOf("we Wrocławiu"));
 
-                result = result.Substring(result.IndexOf("(osiedle") + 9);
+                result = result.Substring(result.IndexOf("(") + 1);
                 string district = result.Substring(0, result.IndexOf(")"));
+                district = district.Replace("osiedle", "").Trim();
 
                 result = result.Substring(result.IndexOf("o powierzchni") + 14);
                 double flatArea = Convert.ToDouble(Regex.Replace(result.Substring(0, result.IndexOf("składający się") - 2), "[^0-9,]", ""));
@@ -388,13 +389,13 @@ namespace TBS_bot
             Dispatcher.Invoke(() => { NotificationTB.Text = "Tworzę wniosek"; });
 
             while (File.Exists(pdfFromDocPath))
-                Thread.Sleep(500);
+                Thread.Sleep(100);
             CreateProposal(item);
 
             while (!File.Exists(pdfFromDocPath))
-                Thread.Sleep(500);
+                Thread.Sleep(100);
             while (IsFileLocked(pdfFromDocPath))
-                Thread.Sleep(500);
+                Thread.Sleep(100);
 
             Dispatcher.Invoke(() => { NotificationTB.Text = "Wysyłam wniosek"; });
             item.IsSend = await SendEmail(item);
@@ -405,7 +406,7 @@ namespace TBS_bot
 
         private async Task<bool> SendEmail(FlatDescription flat)
         {
-            string subject = "wiadomość testowa";
+            string subject = "ogłoszenie ";
             string body = "W załączeniu przesyłam wniosek dot. ogłoszenia nr: ";
             string path = AppDomain.CurrentDomain.BaseDirectory;
             string zalPath = path + "zalTBS.pdf";
@@ -413,8 +414,8 @@ namespace TBS_bot
 
             if (flat != null)
             {
-                subject = flat.Number;
-                body += subject;
+                subject += flat.Number;
+                body += flat.Number;
                 pdfPath = pdfFromDocPath;
             }
             MailMessage mail = new MailMessage();
@@ -535,6 +536,10 @@ namespace TBS_bot
                     break;
                 case ("brochów"):
                     if (BrochowCB.IsChecked == true)
+                        flat.IsClassified = true;
+                    break;
+                case ("psie pole"):
+                    if (PsiePoleCB.IsChecked == true)
                         flat.IsClassified = true;
                     break;
                 default:
