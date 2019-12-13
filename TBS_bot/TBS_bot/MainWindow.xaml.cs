@@ -177,20 +177,29 @@ namespace TBS_bot
             if (isConnection)
             {
                 result = result.Substring(result.IndexOf("<a href=\"http://www.tbs-wroclaw.com.pl/"));
-                result = result.Substring(0, result.IndexOf("<p>&nbsp;</p>"));
+                result = result.Substring(0, result.IndexOf("Ogłoszenie o wynikach"));
 
                 string[] paragraphs = result.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (var item in paragraphs)
                 {
-                    string line = item.Replace("<strong>", "");
-                    line = line.Replace("</strong>", "");
-                    string temporaryItem = line.Substring(line.IndexOf('"') + 1);
-                    string link = temporaryItem.Substring(0, temporaryItem.IndexOf('"'));
 
-                    temporaryItem = line.Substring(line.IndexOf("\">") + 2);
-                    string address = temporaryItem.Substring(0, temporaryItem.IndexOf("</"));
+                    try
+                    {
+                        string line = item.Replace("<strong>", "");
+                        line = line.Replace("</strong>", "");
+                        string temporaryItem = line.Substring(line.IndexOf('"') + 1);
+                        string link = temporaryItem.Substring(0, temporaryItem.IndexOf('"'));
 
-                    flatObjects.Add(new FlatDescription(address, link));
+                        temporaryItem = line.Substring(line.IndexOf("\">") + 2);
+                        string address = temporaryItem.Substring(0, temporaryItem.IndexOf("</"));
+
+
+                        if (link.Length > 30)
+                            flatObjects.Add(new FlatDescription(address, link));
+                    }
+                    catch (Exception)
+                    {
+                    }
                 }
             }
         }
