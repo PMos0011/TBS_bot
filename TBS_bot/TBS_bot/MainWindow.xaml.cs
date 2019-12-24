@@ -120,34 +120,39 @@ namespace TBS_bot
             Dispatcher.Invoke(() => { NotificationTB.Text = "Pobieram"; });
             await GetFlatsList();
 
-            if (isConnection)
+            if (flatObjects.Count > 0)
             {
-                if (IsFlatObjectsDifferent())
+                if (isConnection)
                 {
-                    foreach (var item in flatObjects)
+                    if (IsFlatObjectsDifferent())
                     {
-                        await GetFlatDescription(item);
+                        foreach (var item in flatObjects)
+                        {
+                            await GetFlatDescription(item);
+                        }
+                        if (isConnection)
+                        {
+                            UpdateFlatObjects();
+
+                            await SendEmailCheck();
+
+                            FlatObjectsSerialize();
+                            ReadJson();
+
+                            AddressesTB.Items.Clear();
+                            WriteAdressesList();
+                        }
+                        else
+                            Dispatcher.Invoke(() => { NotificationTB.Text = "błąd połączenia"; });
                     }
-                    if (isConnection)
-                    {
-                        UpdateFlatObjects();
 
-                        await SendEmailCheck();
-
-                        FlatObjectsSerialize();
-                        ReadJson();
-
-                        AddressesTB.Items.Clear();
-                        WriteAdressesList();
-                    }
-                    else
-                        Dispatcher.Invoke(() => { NotificationTB.Text = "błąd połączenia"; });
+                    Dispatcher.Invoke(() => { NotificationTB.Text = "działam"; });
                 }
-
-                Dispatcher.Invoke(() => { NotificationTB.Text = "działam"; });
+                else
+                    Dispatcher.Invoke(() => { NotificationTB.Text = "błąd połączenia"; });
             }
-            else
-                Dispatcher.Invoke(() => { NotificationTB.Text = "błąd połączenia"; });
+            else { Dispatcher.Invoke(() => { NotificationTB.Text = "brak mieszkań bądź błąd pobierania"; }); }
+
 
             mainWindow.Cursor = Cursors.Arrow;
         }
@@ -176,14 +181,13 @@ namespace TBS_bot
 
             if (isConnection)
             {
-                result = result.Substring(result.IndexOf("<a href=\"http://www.tbs-wroclaw.com.pl/"));
-                result = result.Substring(0, result.IndexOf("Ogłoszenie o wynikach"));
-
-                string[] paragraphs = result.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (var item in paragraphs)
+                try
                 {
+                    result = result.Substring(result.IndexOf("<a href=\"http://www.tbs-wroclaw.com.pl/"));
+                    result = result.Substring(0, result.IndexOf("Ogłoszenie o wynikach"));
 
-                    try
+                    string[] paragraphs = result.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var item in paragraphs)
                     {
                         string line = item.Replace("<strong>", "");
                         line = line.Replace("</strong>", "");
@@ -193,13 +197,13 @@ namespace TBS_bot
                         temporaryItem = line.Substring(line.IndexOf("\">") + 2);
                         string address = temporaryItem.Substring(0, temporaryItem.IndexOf("</"));
 
-
                         if (link.Length > 30)
                             flatObjects.Add(new FlatDescription(address, link));
                     }
-                    catch (Exception)
-                    {
-                    }
+
+                }
+                catch (Exception)
+                {
                 }
             }
         }
