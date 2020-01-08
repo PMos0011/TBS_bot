@@ -58,6 +58,7 @@ namespace TBS_bot
             NotificationTB.Text = "nie działam";
             path = AppDomain.CurrentDomain.BaseDirectory;
             pdfFromDocPath = path + "wniosek.pdf";
+            Max_participation.Text = "0";
 
             GetEmailSettings();
             ReadJson();
@@ -96,12 +97,14 @@ namespace TBS_bot
                     NotificationTB.Text = "działam";
                     MailSettingsGrid.IsEnabled = false;
                     isEmailSenderError = false;
+                    Max_participation.IsEnabled = false;
                 }
                 else
                 {
                     StartBotButton.Content = "Start Bot";
                     NotificationTB.Text = "nie działam";
                     MailSettingsGrid.IsEnabled = true;
+                    Max_participation.IsEnabled = true;
                 }
             });
 
@@ -232,17 +235,19 @@ namespace TBS_bot
             if (isConnection)
             {
                 result = result.Substring(result.IndexOf("OGŁOSZENIE"));
+
                 string flatNumber = result.Substring(0, result.IndexOf("</p>"));
 
                 foreach (var item in flatDescriptionReplacementList)
                 {
+                    result = result.Replace(item, "");
                     flatNumber = flatNumber.Replace(item, "");
                 }
 
                 flatNumber = flatNumber.Substring(14);
 
-                string address = result.Substring(result.IndexOf("przy ul.") + 8);
-                address = address.Replace("&nbsp;", " ");
+                string address = result.Substring(result.IndexOf("ul.") + 3);
+                address = address.Trim();
                 address = address.Substring(0, address.IndexOf("we Wrocławiu"));
 
                 result = result.Substring(result.IndexOf("(") + 1);
@@ -258,11 +263,6 @@ namespace TBS_bot
                 result = result.Substring(result.IndexOf("Partycypant wynosi") + 18);
                 result = result.Substring(0, result.IndexOf("zł."));
 
-                foreach (var item in flatDescriptionReplacementList)
-                {
-                    result = result.Replace(item, "");
-                    flat_description = flat_description.Replace(item, "");
-                }
                 double participation = 0;
                 result =result.Trim();
                 try
@@ -272,7 +272,8 @@ namespace TBS_bot
                 catch { }
 
                 int roomsCount = Regex.Matches(flat_description, "Pokoju").Count;
-                int isAneksInt = Regex.Matches(flat_description.ToString(), "Pokoju z aneksem kuchennym").Count;
+                roomsCount+= Regex.Matches(flat_description, "Pokój").Count;
+                int isAneksInt = Regex.Matches(flat_description.ToString(), "aneksem kuchennym").Count;
 
                 bool isAneks;
 
@@ -282,7 +283,7 @@ namespace TBS_bot
                 else
                     isAneks = false;
 
-                flat.FlatDescriptionUpdate(flatNumber, address, roomsCount, flatArea, isAneks, district, result, participation);
+                flat.FlatDescriptionUpdate(flatNumber, address, roomsCount, flatArea, isAneks, district, flat_description, participation);
                 SetFlatClassified(flat);
             }
         }
@@ -533,7 +534,16 @@ namespace TBS_bot
 
         private void SetFlatClassified(FlatDescription flat)
         {
-            if (flat.RoomsCount > 1)
+            double maxParticipation= Convert.ToDouble(Max_participation.Text);
+            bool participationFit = false;
+
+            if (maxParticipation == 0)
+                participationFit = true;
+
+            if (!participationFit && maxParticipation > flat.Participation)
+                participationFit = true;
+
+            if (flat.RoomsCount > 1 && participationFit)
             {
                 if (KitchenCB.IsChecked == true && !flat.IsAneks)
                     DistrictClassified(flat);

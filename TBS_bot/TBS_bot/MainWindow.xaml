@@ -5,15 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TBS_bot"
         mc:Ignorable="d"
-        Title="TBS_BOT" Height="574" Width="769">
+        Title="TBS_BOT" Height="600" Width="780">
     <Grid>
         <Button x:Name="StartBotButton" Content="Start Bot" HorizontalAlignment="Left" Margin="632,10,0,0" VerticalAlignment="Top" Width="74" Click="StartBot_Click"/>
-        <TextBlock x:Name="FlatDescriptionTB" HorizontalAlignment="Left" Height="332" Margin="291,49,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="325"/>
-        <ListView x:Name="AddressesTB" HorizontalAlignment="Left" Height="332" Margin="10,49,0,0" VerticalAlignment="Top" Width="257" SelectionChanged="AddressesTB_SelectionChanged"/>
-        <TextBlock x:Name="HyperLinkTB" HorizontalAlignment="Left" Height="33" Margin="10,386,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="615"/>
+        <TextBlock x:Name="FlatDescriptionTB" HorizontalAlignment="Left" Height="368" Margin="291,49,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="325"/>
+        <ListView x:Name="AddressesTB" HorizontalAlignment="Left" Height="368" Margin="10,49,0,0" VerticalAlignment="Top" Width="257" SelectionChanged="AddressesTB_SelectionChanged"/>
+        <TextBlock x:Name="HyperLinkTB" HorizontalAlignment="Left" Height="33" Margin="10,417,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="615"/>
         <Label Content="adres                              wysłane" HorizontalAlignment="Left" Height="26" Margin="9,18,0,0" VerticalAlignment="Top" Width="258"/>
         <TextBlock x:Name="NotificationTB" HorizontalAlignment="Left" Height="27" Margin="291,17,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="325"/>
-        <Grid x:Name="MailSettingsGrid" HorizontalAlignment="Left" Height="116" Margin="10,420,0,0" VerticalAlignment="Top" Width="624">
+        <Grid x:Name="MailSettingsGrid" HorizontalAlignment="Left" Height="116" Margin="10,451,0,0" VerticalAlignment="Top" Width="624">
             <TextBox x:Name="EmailTB" HorizontalAlignment="Left" Height="28" Margin="82,5,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="236"/>
             <Label Content="nadawca" HorizontalAlignment="Left" Height="28" Margin="0,5,0,0" VerticalAlignment="Top" Width="82"/>
             <Label Content="hasło" HorizontalAlignment="Left" Height="28" Margin="0,38,0,0" VerticalAlignment="Top" Width="82"/>
@@ -34,7 +34,9 @@
         <CheckBox x:Name="OtherCB" Content="Inne" HorizontalAlignment="Left" Margin="632,129,0,0" VerticalAlignment="Top" Width="94" IsChecked="True"/>
         <CheckBox x:Name="KitchenCB" Content="Kuchnia" HorizontalAlignment="Left" Margin="632,169,0,0" VerticalAlignment="Top" Width="94" IsChecked="True"/>
         <CheckBox x:Name="KitchenetteCB" Content="Aneks" HorizontalAlignment="Left" Margin="632,189,0,0" VerticalAlignment="Top" Width="94" IsChecked="True"/>
-        <Button x:Name="SendProposalButton" Content="Wyślij wniosek" HorizontalAlignment="Left" Margin="631,361,0,0" VerticalAlignment="Top" Width="109" Click="SendProposalButton_Click"/>
+        <Button x:Name="SendProposalButton" Content="Wyślij wniosek" HorizontalAlignment="Left" Margin="631,424,0,0" VerticalAlignment="Top" Width="109" Click="SendProposalButton_Click"/>
         <CheckBox x:Name="PsiePoleCB" Content="Psie Pole" HorizontalAlignment="Left" Margin="632,109,0,0" VerticalAlignment="Top" Width="94" IsChecked="True"/>
+        <TextBox x:Name="Max_participation" HorizontalAlignment="Left" Height="28" TextWrapping="Wrap" VerticalAlignment="Top" Width="118" Margin="635,245,0,0"/>
+        <Label Content="Maks. partycyp" HorizontalAlignment="Left" Height="28" Margin="635,212,0,0" VerticalAlignment="Top" Width="118"/>
     </Grid>
 </Window>

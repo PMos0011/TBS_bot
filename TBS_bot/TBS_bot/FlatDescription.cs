@@ -49,7 +49,6 @@ namespace TBS_bot
             stringBuilder.Append(Address + Environment.NewLine);
             stringBuilder.Append("osiedle: " + District + Environment.NewLine);
             stringBuilder.Append(DetailedDescription + Environment.NewLine);
-            stringBuilder.Append(Environment.NewLine);
             stringBuilder.Append("powierzchnia: " + FlatArea + Environment.NewLine);
             stringBuilder.Append("partycyp: " + Participation + Environment.NewLine);
             stringBuilder.Append("metr: " + (Participation / FlatArea).ToString("F") + Environment.NewLine);
