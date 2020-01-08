@@ -20,13 +20,15 @@ namespace TBS_bot
         public string DetailedDescription { get; set; }
         public bool IsClassified { get; set; }
 
+        public double Participation { get; set; }
+
         public FlatDescription(string Address, string Link)
         {
             this.Address = Address;
             this.Link = Link;
         }
 
-        public void FlatDescriptionUpdate(string number, string address, int flatNumber, double flatArea, bool isAneks, string district, string detailedDescription)
+        public void FlatDescriptionUpdate(string number, string address, int flatNumber, double flatArea, bool isAneks, string district, string detailedDescription, double participation)
         {
             this.Number = number;
             this.AlternationAddress = address;
@@ -35,7 +37,7 @@ namespace TBS_bot
             this.IsAneks = isAneks;
             this.District = district;
             this.DetailedDescription = detailedDescription;
-
+            this.Participation = participation;
             this.IsSend = false;
         }
 
@@ -47,8 +49,10 @@ namespace TBS_bot
             stringBuilder.Append(Address + Environment.NewLine);
             stringBuilder.Append("osiedle: " + District + Environment.NewLine);
             stringBuilder.Append(DetailedDescription + Environment.NewLine);
+            stringBuilder.Append(Environment.NewLine);
             stringBuilder.Append("powierzchnia: " + FlatArea + Environment.NewLine);
-            stringBuilder.Append("partycyp: " + (FlatArea * 1200).ToString("F") + Environment.NewLine);
+            stringBuilder.Append("partycyp: " + Participation + Environment.NewLine);
+            stringBuilder.Append("metr: " + (Participation / FlatArea).ToString("F") + Environment.NewLine);
             stringBuilder.Append("czynsz: " + (FlatArea * 14.25).ToString("F") + Environment.NewLine);
             stringBuilder.Append(Environment.NewLine);
             stringBuilder.Append("pokoje: " + RoomsCount + Environment.NewLine);

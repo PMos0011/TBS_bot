@@ -252,16 +252,27 @@ namespace TBS_bot
                 result = result.Substring(result.IndexOf("o powierzchni") + 14);
                 double flatArea = Convert.ToDouble(Regex.Replace(result.Substring(0, result.IndexOf("składający się") - 2), "[^0-9,]", ""));
 
-                result = result.Substring(result.IndexOf("<ol>") + 4);
-                result = result.Substring(0, result.IndexOf("</ol>"));
+                string flat_description = result.Substring(result.IndexOf("<ol>") + 4);
+                flat_description = flat_description.Substring(0, flat_description.IndexOf("</ol>"));
+
+                result = result.Substring(result.IndexOf("Partycypant wynosi") + 18);
+                result = result.Substring(0, result.IndexOf("zł."));
 
                 foreach (var item in flatDescriptionReplacementList)
                 {
                     result = result.Replace(item, "");
+                    flat_description = flat_description.Replace(item, "");
                 }
+                double participation = 0;
+                result =result.Trim();
+                try
+                {
+                    participation = Convert.ToDouble(result);
+                }
+                catch { }
 
-                int roomsCount = Regex.Matches(result, "Pokoju").Count;
-                int isAneksInt = Regex.Matches(result.ToString(), "Pokoju z aneksem kuchennym").Count;
+                int roomsCount = Regex.Matches(flat_description, "Pokoju").Count;
+                int isAneksInt = Regex.Matches(flat_description.ToString(), "Pokoju z aneksem kuchennym").Count;
 
                 bool isAneks;
 
@@ -271,7 +282,7 @@ namespace TBS_bot
                 else
                     isAneks = false;
 
-                flat.FlatDescriptionUpdate(flatNumber, address, roomsCount, flatArea, isAneks, district, result);
+                flat.FlatDescriptionUpdate(flatNumber, address, roomsCount, flatArea, isAneks, district, result, participation);
                 SetFlatClassified(flat);
             }
         }
