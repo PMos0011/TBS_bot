@@ -16,6 +16,7 @@ using Newtonsoft.Json;
 using System.Net.Mail;
 using System.Net;
 using System.Threading;
+using System.Text;
 
 namespace TBS_bot
 {
@@ -40,6 +41,10 @@ namespace TBS_bot
               "</u>",
               "<p>",
               "</p>",
+              "<p",
+              ">",
+            "<ol>",
+            "</ol>"
         };
 
         string path;
@@ -234,7 +239,9 @@ namespace TBS_bot
 
             if (isConnection)
             {
-                result = result.Substring(result.IndexOf("OGŁOSZENIE"));
+                try
+                {
+                    result = result.Substring(result.IndexOf("OGŁOSZENIE"));
 
                 string flatNumber = result.Substring(0, result.IndexOf("</p>"));
 
@@ -257,34 +264,68 @@ namespace TBS_bot
                 result = result.Substring(result.IndexOf("o powierzchni") + 14);
                 double flatArea = Convert.ToDouble(Regex.Replace(result.Substring(0, result.IndexOf("składający się") - 2), "[^0-9,]", ""));
 
-                string flat_description = result.Substring(result.IndexOf("<ol>") + 4);
-                flat_description = flat_description.Substring(0, flat_description.IndexOf("</ol>"));
+                string flat_description = result.Substring(result.IndexOf("składający się z") + 16);
+                flat_description = flat_description.Substring(0, flat_description.IndexOf("Mieszkanie"));
 
                 result = result.Substring(result.IndexOf("Partycypant wynosi") + 18);
                 result = result.Substring(0, result.IndexOf("zł."));
 
                 double participation = 0;
                 result =result.Trim();
-                try
-                {
+                
                     participation = Convert.ToDouble(result);
+
+
+                    flat_description = flat_description.ToLower();
+                    string[] paragraphs = flat_description.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+
+
+                    int roomsCount = 0;
+                    bool isAneks = false;
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.Append("Skład mieszkania:" + Environment.NewLine);
+                    foreach (var item in paragraphs)
+                    {
+                        if (Regex.Matches(item, "przedpok").Count > 0)
+                        {
+                            string subItem = item.Substring(item.IndexOf("przedpok"));
+                            stringBuilder.Append(subItem + Environment.NewLine);
+                        }
+                        else if(Regex.Matches(item, "pok").Count > 0)
+                        {
+                            string subItem = item.Substring(item.IndexOf("pok"));
+                            stringBuilder.Append(subItem + Environment.NewLine);
+                            roomsCount++;
+                        }
+                        else if (Regex.Matches(item, "kuchni").Count > 0)
+                        {
+                            string subItem = item.Substring(item.IndexOf("kuchni"));
+                            stringBuilder.Append(subItem + Environment.NewLine);
+                            
+                        }
+                        else if (Regex.Matches(item, "łazien").Count > 0)
+                        {
+                            string subItem = item.Substring(item.IndexOf("łazien"));
+                            stringBuilder.Append(subItem + Environment.NewLine);
+
+                        }
+                        else if (Regex.Matches(item, "pomieszczen").Count > 0)
+                        {
+                            string subItem = item.Substring(item.IndexOf("pomieszczen"));
+                            stringBuilder.Append(subItem + Environment.NewLine);
+
+                        }
+
+                        if (Regex.Matches(item, "aneksem kuchennym").Count > 0)
+                            isAneks = true;
+
+                    }
+
+
+                flat.FlatDescriptionUpdate(flatNumber, address, roomsCount, flatArea, isAneks, district, stringBuilder.ToString(), participation);
+                SetFlatClassified(flat);
                 }
                 catch { }
-
-                int roomsCount = Regex.Matches(flat_description, "Pokoju").Count;
-                roomsCount+= Regex.Matches(flat_description, "Pokój").Count;
-                int isAneksInt = Regex.Matches(flat_description.ToString(), "aneksem kuchennym").Count;
-
-                bool isAneks;
-
-                if (isAneksInt == 1)
-                    isAneks = true;
-
-                else
-                    isAneks = false;
-
-                flat.FlatDescriptionUpdate(flatNumber, address, roomsCount, flatArea, isAneks, district, flat_description, participation);
-                SetFlatClassified(flat);
             }
         }
 
